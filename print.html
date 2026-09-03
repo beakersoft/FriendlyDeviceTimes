@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Family Link Timetable</title>
+  <link rel="stylesheet" href="print.css">
+</head>
+<body>
+  <div class="no-print toolbar">
+    <button id="printBtn" type="button">Print</button>
+    <button id="reloadBtn" type="button">Refresh data</button>
+    <span id="statusText"></span>
+  </div>
+
+  <main id="main">
+    <div id="emptyState" class="empty-state">
+      <p>No Family Link schedule has been captured yet.</p>
+      <p>
+        Open your child's screen-time page in
+        <a href="https://families.google.com/familylink/" target="_blank" rel="noopener">Family Link</a>,
+        then click <strong>Refresh data</strong>.
+      </p>
+    </div>
+
+    <div id="content" class="content hidden">
+      <header class="sheet-header">
+        <h1 id="childName">Child timetable</h1>
+        <p id="deviceInfo" class="device-info"></p>
+      </header>
+
+      <section id="timetable" class="timetable" aria-labelledby="childName">
+        <div class="timetable-head" aria-hidden="true">
+          <span class="day-label">Day</span>
+          <!-- Hours injected by print.js -->
+        </div>
+        <div class="timetable-body">
+          <!-- Rows injected by print.js -->
+        </div>
+      </section>
+
+      <section id="summary" class="summary" aria-label="Allowed times by day">
+        <h2>Allowed times</h2>
+        <dl id="summaryList">
+          <!-- Summary items injected by print.js -->
+        </dl>
+      </section>
+
+      <section id="debug" class="debug no-print" aria-label="Debug information">
+        <h2>Debug info</h2>
+        <p class="debug-hint">
+          If the timetable above is empty, copy the text below and share it for troubleshooting.
+        </p>
+        <button id="copyDebugBtn" type="button">Copy debug data</button>
+        <pre id="debugOutput"></pre>
+      </section>
+    </div>
+  </main>
+
+  <script src="print.js"></script>
+</body>
+</html>
