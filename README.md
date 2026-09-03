@@ -44,7 +44,7 @@ You can also enable debug logging by adding this line to the console while on
 the Family Link page:
 
 ```js
-localStorage.setItem('flt-debug', '1');
+localStorage.setItem("flt-debug", "1");
 ```
 
 Reload the page and the interceptor will log every intercepted response to the

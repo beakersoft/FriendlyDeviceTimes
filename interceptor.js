@@ -1,8 +1,8 @@
 (() => {
-  'use strict';
+  "use strict";
 
   // Marker used to identify messages sent from this interceptor.
-  const MARKER = 'family-link-time-printer';
+  const MARKER = "family-link-time-printer";
 
   /**
    * Best-effort URL patterns that Family Link uses when fetching screen-time
@@ -21,12 +21,12 @@
     /v1\/family/i,
     /kids/i,
     /kidsmanagement-pa/i,
-    /timelimit/i
+    /timelimit/i,
   ];
 
   function isDebugEnabled() {
     try {
-      return localStorage.getItem('flt-debug') === '1';
+      return localStorage.getItem("flt-debug") === "1";
     } catch {
       return false;
     }
@@ -34,7 +34,7 @@
 
   function debug(...args) {
     if (isDebugEnabled()) {
-      console.log('[Family Link Time Printer]', ...args);
+      console.log("[Family Link Time Printer]", ...args);
     }
   }
 
@@ -55,10 +55,10 @@
     window.postMessage(
       {
         source: MARKER,
-        type: 'family-link-response',
-        payload
+        type: "family-link-response",
+        payload,
       },
-      window.location.origin
+      window.location.origin,
     );
   }
 
@@ -94,20 +94,32 @@
       const urlObj = new URL(url, window.location.href);
       let best = undefined;
 
-      const pathMatches = urlObj.pathname.matchAll(/(?:child|kid|member|people)[/=]([a-zA-Z0-9_-]+)/gi);
+      const pathMatches = urlObj.pathname.matchAll(
+        /(?:child|kid|member|people)[/=]([a-zA-Z0-9_-]+)/gi,
+      );
       for (const match of pathMatches) {
         if (isBetterChildId(best, match[1])) {
           best = match[1];
         }
       }
 
-      for (const key of ['childId', 'memberId', 'kidId', 'userId', 'personId', 'personIds']) {
+      for (const key of [
+        "childId",
+        "memberId",
+        "kidId",
+        "userId",
+        "personId",
+        "personIds",
+      ]) {
         const value = urlObj.searchParams.get(key);
         if (!value) {
           continue;
         }
         // personIds may be comma-separated; take the first real-looking ID.
-        const candidates = value.split(',').map((s) => s.trim()).filter(Boolean);
+        const candidates = value
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
         for (const candidate of candidates) {
           if (isBetterChildId(best, candidate)) {
             best = candidate;
@@ -126,23 +138,23 @@
    * If your Family Link UI starts the week on Sunday, flip this mapping.
    */
   const DAY_OF_WEEK_MAP = {
-    1: 'monday',
-    2: 'tuesday',
-    3: 'wednesday',
-    4: 'thursday',
-    5: 'friday',
-    6: 'saturday',
-    7: 'sunday'
+    1: "monday",
+    2: "tuesday",
+    3: "wednesday",
+    4: "thursday",
+    5: "friday",
+    6: "saturday",
+    7: "sunday",
   };
 
   const DAYS = [
-    'sunday',
-    'monday',
-    'tuesday',
-    'wednesday',
-    'thursday',
-    'friday',
-    'saturday'
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
   ];
 
   function emptyDaySchedule() {
@@ -155,7 +167,7 @@
     }
     const hour = arr[0];
     const minute = arr[1] || 0;
-    if (typeof hour !== 'number' || typeof minute !== 'number') {
+    if (typeof hour !== "number" || typeof minute !== "number") {
       return null;
     }
     return hour + minute / 60;
@@ -222,13 +234,13 @@
     return (
       Array.isArray(entry) &&
       entry.length >= 5 &&
-      typeof entry[1] === 'number' &&
+      typeof entry[1] === "number" &&
       entry[1] >= 1 &&
       entry[1] <= 7 &&
       Array.isArray(entry[3]) &&
-      typeof entry[3][0] === 'number' &&
+      typeof entry[3][0] === "number" &&
       Array.isArray(entry[4]) &&
-      typeof entry[4][0] === 'number'
+      typeof entry[4][0] === "number"
     );
   }
 
@@ -236,10 +248,10 @@
     return (
       Array.isArray(entry) &&
       entry.length >= 4 &&
-      typeof entry[1] === 'number' &&
+      typeof entry[1] === "number" &&
       entry[1] >= 1 &&
       entry[1] <= 7 &&
-      typeof entry[3] === 'number' &&
+      typeof entry[3] === "number" &&
       !Array.isArray(entry[3])
     );
   }
@@ -350,25 +362,31 @@
     // Family Link's response format is undocumented, so we look for the most
     // common shapes and fall back to returning the raw body for inspection.
 
-    if (!body || typeof body !== 'object') {
+    if (!body || typeof body !== "object") {
       return null;
     }
 
     function isWindowLike(obj) {
       return (
         obj &&
-        typeof obj === 'object' &&
-        (('startTime' in obj && 'endTime' in obj) ||
-          ('start' in obj && 'end' in obj) ||
-          ('from' in obj && 'to' in obj) ||
-          ('startHour' in obj && 'endHour' in obj))
+        typeof obj === "object" &&
+        (("startTime" in obj && "endTime" in obj) ||
+          ("start" in obj && "end" in obj) ||
+          ("from" in obj && "to" in obj) ||
+          ("startHour" in obj && "endHour" in obj))
       );
     }
 
     function normalizeWindow(win) {
       const start =
-        win.startTime ?? win.start ?? win.from ?? win.startHour ?? win.begin ?? null;
-      const end = win.endTime ?? win.end ?? win.to ?? win.endHour ?? win.finish ?? null;
+        win.startTime ??
+        win.start ??
+        win.from ??
+        win.startHour ??
+        win.begin ??
+        null;
+      const end =
+        win.endTime ?? win.end ?? win.to ?? win.endHour ?? win.finish ?? null;
       if (start == null || end == null) {
         return null;
       }
@@ -379,12 +397,29 @@
     if (DAYS.some((d) => d in body || body[d])) {
       const schedule = {};
       for (const day of DAYS) {
-        const raw = body[day] ?? body[day.toUpperCase()] ?? body[day.charAt(0).toUpperCase() + day.slice(1)];
+        const raw =
+          body[day] ??
+          body[day.toUpperCase()] ??
+          body[day.charAt(0).toUpperCase() + day.slice(1)];
         if (Array.isArray(raw)) {
-          schedule[day] = { allowed: raw.map(normalizeWindow).filter(Boolean), blocked: [], dailyLimitMinutes: null };
-        } else if (raw && typeof raw === 'object') {
-          const arr = raw.windows ?? raw.times ?? raw.allowedTimes ?? raw.periods ?? raw.intervals ?? [raw];
-          schedule[day] = { allowed: (Array.isArray(arr) ? arr : [arr]).map(normalizeWindow).filter(Boolean), blocked: [], dailyLimitMinutes: null };
+          schedule[day] = {
+            allowed: raw.map(normalizeWindow).filter(Boolean),
+            blocked: [],
+            dailyLimitMinutes: null,
+          };
+        } else if (raw && typeof raw === "object") {
+          const arr = raw.windows ??
+            raw.times ??
+            raw.allowedTimes ??
+            raw.periods ??
+            raw.intervals ?? [raw];
+          schedule[day] = {
+            allowed: (Array.isArray(arr) ? arr : [arr])
+              .map(normalizeWindow)
+              .filter(Boolean),
+            blocked: [],
+            dailyLimitMinutes: null,
+          };
         } else {
           schedule[day] = emptyDaySchedule();
         }
@@ -394,22 +429,22 @@
 
     // Case 2: schedule is nested under a known key.
     const candidateKeys = [
-      'screenTimeSettings',
-      'deviceTimeSettings',
-      'dailyLimitSettings',
-      'schedule',
-      'schedules',
-      'allowedTimes',
-      'timeLimits',
-      'dailySchedule',
-      'limits',
-      'data',
-      'result'
+      "screenTimeSettings",
+      "deviceTimeSettings",
+      "dailyLimitSettings",
+      "schedule",
+      "schedules",
+      "allowedTimes",
+      "timeLimits",
+      "dailySchedule",
+      "limits",
+      "data",
+      "result",
     ];
 
     for (const key of candidateKeys) {
       const nested = body[key];
-      if (nested && typeof nested === 'object') {
+      if (nested && typeof nested === "object") {
         const parsed = extractScheduleFromBody(nested);
         if (parsed) {
           return parsed;
@@ -424,7 +459,7 @@
         schedule[day] = emptyDaySchedule();
       }
       for (const item of body) {
-        if (!item || typeof item !== 'object') {
+        if (!item || typeof item !== "object") {
           continue;
         }
         const dayKey =
@@ -453,10 +488,12 @@
 
   function maybeExtractChildInfo(body, url) {
     const info = {
-      childId: extractChildIdentifier(url) || extractChildIdentifier(window.location.href)
+      childId:
+        extractChildIdentifier(url) ||
+        extractChildIdentifier(window.location.href),
     };
 
-    if (body && typeof body === 'object') {
+    if (body && typeof body === "object") {
       info.childName =
         body.childName ??
         body.name ??
@@ -473,11 +510,7 @@
         undefined;
 
       info.timeZone =
-        body.timeZone ??
-        body.timezone ??
-        body.zone ??
-        body.tz ??
-        undefined;
+        body.timeZone ?? body.timezone ?? body.zone ?? body.tz ?? undefined;
     }
 
     // Try to pull device info from the Family Link pblib response.
@@ -500,12 +533,22 @@
     const lower = url.toLowerCase();
     // Match /timeLimit (with or without trailing query params) and
     // /appliedTimeLimits endpoints.
-    return /\/timelimit(?:\?|\/|$)/i.test(lower) || lower.includes('/appliedtimelimits');
+    return (
+      /\/timelimit(?:\?|\/|$)/i.test(lower) ||
+      lower.includes("/appliedtimelimits")
+    );
   }
 
   function handleResponse(url, status, rawBody) {
     const interesting = looksInteresting(url);
-    debug('handleResponse', url, 'interesting=', interesting, 'status=', status);
+    debug(
+      "handleResponse",
+      url,
+      "interesting=",
+      interesting,
+      "status=",
+      status,
+    );
 
     if (!interesting) {
       return;
@@ -513,7 +556,7 @@
 
     const body = tryParseJson(rawBody);
     if (!body) {
-      debug('Could not parse response body as JSON', rawBody.slice(0, 200));
+      debug("Could not parse response body as JSON", rawBody.slice(0, 200));
       return;
     }
 
@@ -525,7 +568,14 @@
     const isSchedule = isScheduleEndpoint(url);
     const schedule = isSchedule ? extractScheduleFromBody(body) : null;
 
-    debug('Parsed schedule', schedule, 'child', childInfo, 'isSchedule=', isSchedule);
+    debug(
+      "Parsed schedule",
+      schedule,
+      "child",
+      childInfo,
+      "isSchedule=",
+      isSchedule,
+    );
 
     // Skip forwarding non-schedule kidsmanagement traffic entirely so it cannot
     // overwrite stored schedule data.
@@ -539,7 +589,7 @@
       child: childInfo,
       schedule,
       raw: body,
-      interceptedAt: Date.now()
+      interceptedAt: Date.now(),
     });
   }
 
@@ -547,9 +597,9 @@
   const originalFetch = window.fetch;
   window.fetch = async function familyLinkFetch(...args) {
     const request = args[0];
-    const url = typeof request === 'string' ? request : request?.url;
+    const url = typeof request === "string" ? request : request?.url;
 
-    debug('fetch intercepted', url);
+    debug("fetch intercepted", url);
 
     try {
       const response = await originalFetch.apply(this, args);
@@ -567,7 +617,11 @@
   const originalOpen = XMLHttpRequest.prototype.open;
   const originalSend = XMLHttpRequest.prototype.send;
 
-  XMLHttpRequest.prototype.open = function familyLinkOpen(method, url, ...rest) {
+  XMLHttpRequest.prototype.open = function familyLinkOpen(
+    method,
+    url,
+    ...rest
+  ) {
     this._familyLinkUrl = url;
     this._familyLinkMethod = method;
     return originalOpen.apply(this, [method, url, ...rest]);
@@ -575,7 +629,7 @@
 
   XMLHttpRequest.prototype.send = function familyLinkSend(...args) {
     const url = this._familyLinkUrl;
-    debug('XHR intercepted', url);
+    debug("XHR intercepted", url);
 
     if (url && looksInteresting(url)) {
       const onReady = () => {
@@ -587,16 +641,16 @@
           }
         }
       };
-      this.addEventListener('readystatechange', onReady);
+      this.addEventListener("readystatechange", onReady);
     }
     return originalSend.apply(this, args);
   };
 
   // Notify the content script that the interceptor is ready.
   sendPayload({
-    type: 'interceptor-ready',
-    href: window.location.href
+    type: "interceptor-ready",
+    href: window.location.href,
   });
 
-  debug('Interceptor installed');
+  debug("Interceptor installed");
 })();
