@@ -319,16 +319,19 @@
       }
 
       // Time window entry: [id, dayIndex, type, [startHour, startMin], [endHour, endMin], ...]
+      // type === 2 means the rule is active for that day; type === 1 means
+      // it's disabled (e.g. school time turned off for weekends) and should
+      // not be treated as a blocked window.
       if (looksLikeTimeWindowEntry(node)) {
         const dayName = DAY_OF_WEEK_MAP[node[1]];
-        if (dayName) {
+        if (dayName && node[2] === 2) {
           const startHour = timeArrayToHour(node[3]);
           const endHour = timeArrayToHour(node[4]);
           if (startHour !== null && endHour !== null) {
             schedule[dayName].blocked.push({ start: startHour, end: endHour });
-            foundAny = true;
           }
         }
+        foundAny = true;
         return;
       }
 
@@ -486,6 +489,37 @@
     return null;
   }
 
+  /**
+   * Matches the /families/mine/members endpoint, which returns every family
+   * member (parents and children) with their real display name.
+   */
+  function isFamilyMembersEndpoint(url) {
+    return /\/families\/mine\/members(?:\?|\/|$)/i.test(url);
+  }
+
+  /**
+   * Parses the /families/mine/members response:
+   * [ [ [personId, null, roleType, [fullName, ...], ...], ... ], [...], selfId ]
+   * Each member entry's id and full name are used directly - no guessing.
+   */
+  function extractFamilyMembers(body) {
+    if (!Array.isArray(body) || !Array.isArray(body[0])) {
+      return [];
+    }
+    const members = [];
+    for (const entry of body[0]) {
+      if (!Array.isArray(entry) || typeof entry[0] !== "string") {
+        continue;
+      }
+      const nameInfo = entry[3];
+      const fullName = Array.isArray(nameInfo) ? nameInfo[0] : undefined;
+      if (typeof fullName === "string" && fullName.length > 0) {
+        members.push({ childId: entry[0], childName: fullName });
+      }
+    }
+    return members;
+  }
+
   function maybeExtractChildInfo(body, url) {
     const info = {
       childId:
@@ -494,13 +528,7 @@
     };
 
     if (body && typeof body === "object") {
-      info.childName =
-        body.childName ??
-        body.name ??
-        body.displayName ??
-        body.firstName ??
-        body.nickname ??
-        undefined;
+      info.childName = body.childName ?? undefined;
 
       info.deviceName =
         body.deviceName ??
@@ -560,6 +588,22 @@
       return;
     }
 
+    // The family members list carries every child's real display name,
+    // keyed by their own person ID - forward one payload per member.
+    if (isFamilyMembersEndpoint(url)) {
+      const members = extractFamilyMembers(body);
+      debug("Parsed family members", members);
+      for (const member of members) {
+        sendPayload({
+          url,
+          status,
+          child: member,
+          interceptedAt: Date.now(),
+        });
+      }
+      return;
+    }
+
     const childInfo = maybeExtractChildInfo(body, url);
 
     // Only extract schedules from the actual time-limit endpoints.
@@ -577,9 +621,17 @@
       isSchedule,
     );
 
-    // Skip forwarding non-schedule kidsmanagement traffic entirely so it cannot
-    // overwrite stored schedule data.
+    // Non-schedule kidsmanagement traffic must never overwrite stored
+    // schedule data, but it may carry the child's display name.
     if (!isSchedule) {
+      if (childInfo.childId && childInfo.childName) {
+        sendPayload({
+          url,
+          status,
+          child: childInfo,
+          interceptedAt: Date.now(),
+        });
+      }
       return;
     }
 
